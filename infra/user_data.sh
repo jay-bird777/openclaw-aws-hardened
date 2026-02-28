@@ -72,6 +72,4 @@ write_env "TELEGRAM_BOT_TOKEN" "$(get_param "$SSM_PREFIX/TELEGRAM_BOT_TOKEN")"
 write_env "TELEGRAM_CHAT_ID"   "$(get_param "$SSM_PREFIX/TELEGRAM_CHAT_ID")"
 write_env "MODEL_PROVIDER"     "$(get_param "$SSM_PREFIX/MODEL_PROVIDER")"
 write_env "MODEL_API_KEY"      "$(get_param "$SSM_PREFIX/MODEL_API_KEY")"
-
-docker compose up -d
-docker ps || true
+write_env "DISCORD_WEBHOOK_URL" "$(get_param "$SSM_PREFIX/DISCORD_WEBHOOK_URL")"
