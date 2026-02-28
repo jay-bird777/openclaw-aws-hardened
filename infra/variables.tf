@@ -19,7 +19,7 @@ variable "instance_type" {
 variable "agent_image" {
   type        = string
   description = "Docker image for your agent (placeholder by default)"
-  default     = "ghcr.io/example/agent:latest"
+  default     = "ghcr.io/jay-bird777/openclaw-agent:latest"
 }
 
 variable "agent_container_name" {

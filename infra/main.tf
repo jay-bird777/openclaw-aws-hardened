@@ -1,3 +1,4 @@
+data "aws_caller_identity" "current" {}
 locals {
   merged_tags = merge(
     {
@@ -42,6 +43,33 @@ resource "aws_route" "public_internet" {
 resource "aws_route_table_association" "public_assoc" {
   subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
+}
+
+data "aws_iam_policy_document" "cw_logs_write" {
+  statement {
+    sid    = "AllowCWLogsWriteForAgent"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogStreams"
+    ]
+
+    resources = [
+      "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/${var.project_name}/agent:*"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "cw_logs_write" {
+  name   = "${var.project_name}-cw-logs-write"
+  policy = data.aws_iam_policy_document.cw_logs_write.json
+  tags   = local.merged_tags
+}
+
+resource "aws_iam_role_policy_attachment" "cw_logs_write_attach" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = aws_iam_policy.cw_logs_write.arn
 }
 
 resource "aws_security_group" "ec2" {

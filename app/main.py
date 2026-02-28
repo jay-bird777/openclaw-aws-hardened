@@ -1,42 +1,58 @@
 import os
-import time
-import json
-import urllib.request
-import urllib.error
+import asyncio
+import discord
 
-DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
-HEARTBEAT_SECONDS = int(os.getenv("HEARTBEAT_SECONDS", "60"))
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+ALLOWED_CHANNEL_ID = os.getenv("DISCORD_ALLOWED_CHANNEL_ID")
 
-def send_discord(message: str) -> None:
-    if not DISCORD_WEBHOOK_URL:
-        print("[agent] DISCORD_WEBHOOK_URL not set; skipping.")
+if ALLOWED_CHANNEL_ID:
+    try:
+        ALLOWED_CHANNEL_ID = int(ALLOWED_CHANNEL_ID)
+    except ValueError:
+        ALLOWED_CHANNEL_ID = None
+
+intents = discord.Intents.default()
+intents.message_content = True
+
+client = discord.Client(intents=intents)
+
+def channel_allowed(message):
+    if not ALLOWED_CHANNEL_ID:
+        return True
+    return message.channel.id == ALLOWED_CHANNEL_ID
+
+@client.event
+async def on_ready():
+    print(f"[agent] Logged in as {client.user}")
+    print("[agent] Ready.")
+
+@client.event
+async def on_message(message):
+    if message.author.bot:
         return
 
-    data = json.dumps({"content": message}).encode("utf-8")
-    req = urllib.request.Request(
-        DISCORD_WEBHOOK_URL,
-        data=data,
-        headers={"Content-Type": "application/json", "User-Agent": "openclaw-agent/1.0"},
-        method="POST",
-    )
+    if not channel_allowed(message):
+        return
 
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            body = resp.read().decode("utf-8", errors="replace")
-            print("[agent] Discord OK:", resp.status, body[:200])
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", errors="replace") if hasattr(e, "read") else ""
-        print(f"[agent] Discord HTTPError: {e.code} {e.reason} body={body[:300]}")
-    except Exception as e:
-        print("[agent] Discord error:", repr(e))
+    content = message.content.strip()
 
-def main():
-    print("[agent] starting up…")
-    send_discord("✅ OpenClaw AWS agent is online.")
+    if content == "!ping":
+        await message.channel.send("🏓 pong")
+
+    elif content == "!status":
+        await message.channel.send("🟢 Clawbot is online.")
+
+    elif content.startswith("!echo "):
+        await message.channel.send(content[6:])
+
+async def heartbeat():
     while True:
         print("[agent] heartbeat…")
-        send_discord("💓 OpenClaw heartbeat")
-        time.sleep(HEARTBEAT_SECONDS)
+        await asyncio.sleep(60)
+
+async def main():
+    asyncio.create_task(heartbeat())
+    await client.start(TOKEN)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
