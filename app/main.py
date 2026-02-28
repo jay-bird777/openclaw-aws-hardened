@@ -33,7 +33,6 @@ def send_discord(message: str) -> None:
 def main():
     print("[agent] starting up…")
     send_discord("✅ OpenClaw AWS agent is online.")
-
     while True:
         print("[agent] heartbeat…")
         send_discord("💓 OpenClaw heartbeat")
